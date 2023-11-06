@@ -48,8 +48,7 @@ function doSearch(value) {
   updateDisplay(filtered);
 }
 
-function parseInputFile(e) {
-  const file = e.target.files[0];
+function parseInputFile(file) {
   const reader = new FileReader();
   reader.readAsText(file);
   reader.onloadend = function (e) {
@@ -59,10 +58,11 @@ function parseInputFile(e) {
     } catch (err) {
       console.log(err);
     }
-    window.data = result.cve;
+    if ("cve" in result) {
+      window.data = result.cve;
+    } else {
+      window.data = result;
+    }
     updateDisplay(window.data);
   };
 }
-
-input = document.querySelector("input");
-input.addEventListener("input", parseInputFile);

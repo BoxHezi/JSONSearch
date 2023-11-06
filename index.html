@@ -14,7 +14,7 @@
   </head>
   <body>
     <div class="container">
-      <input type="file" name="" id="" />
+      <input type="file" name="" id="" oninput="parseInputFile(this.files[0])"/>
       <input type="text" placeholder="SEARCH" oninput="doSearch(this.value)" />
       <div id="result">
         <table class="table table-striped">
