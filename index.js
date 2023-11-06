@@ -1,13 +1,11 @@
 var template = "<td>$cveId</td><td>$desc</td><td>$published</td>";
 
-function init() {}
-
 function parseDesc(content) {
   return content.replace("<", "&lt;").replace(">", "&gt;").replace(/\'/g, '"');
 }
 
 function updateDisplay(data) {
-  document.getElementById("result-body").innerHTML = "";
+  document.getElementById("result-body").innerHTML = ""; // clear the table
   for (const [k, v] of Object.entries(data)) {
     let tr = document.createElement("tr");
     let content = template
@@ -21,12 +19,13 @@ function updateDisplay(data) {
 }
 
 function search(value) {
-  let filtered = [];
+  value = value.toLowerCase();
+  let filtered = []; // list to store filtered result
   for (const [k, v] of Object.entries(window.data)) {
     if (
-      v.id.includes(value) ||
-      v.descriptions[0].value.includes(value) ||
-      v.published.includes(value)
+      v.id.toLowerCase().includes(value) ||
+      v.descriptions[0].value.toLowerCase().includes(value) ||
+      v.published.toLowerCase().includes(value)
     ) {
       filtered.push(window.data[k]);
     }
@@ -34,7 +33,7 @@ function search(value) {
   updateDisplay(filtered);
 }
 
-function inputFunc(e) {
+function parseInputFile(e) {
   const file = e.target.files[0];
   const reader = new FileReader();
   reader.readAsText(file);
@@ -51,9 +50,4 @@ function inputFunc(e) {
 }
 
 input = document.querySelector("input");
-input.addEventListener("input", inputFunc);
-
-// function inputTest(e) {
-//   console.log(e);
-//   console.log("TEST");
-// }
+input.addEventListener("input", parseInputFile);
