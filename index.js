@@ -7,8 +7,8 @@ function parseDesc(content) {
 }
 
 function updateDisplay(data) {
-  const cves = data.cve;
-  for (const [k, v] of Object.entries(cves)) {
+  document.getElementById("result-body").innerHTML = "";
+  for (const [k, v] of Object.entries(data)) {
     let tr = document.createElement("tr");
     let content = template
       .replace("$cveId", v.id)
@@ -20,7 +20,19 @@ function updateDisplay(data) {
   }
 }
 
-function search() {}
+function search(value) {
+  let filtered = [];
+  for (const [k, v] of Object.entries(window.data)) {
+    if (
+      v.id.includes(value) ||
+      v.descriptions[0].value.includes(value) ||
+      v.published.includes(value)
+    ) {
+      filtered.push(window.data[k]);
+    }
+  }
+  updateDisplay(filtered);
+}
 
 function inputFunc(e) {
   const file = e.target.files[0];
@@ -33,11 +45,8 @@ function inputFunc(e) {
     } catch (err) {
       console.log(err);
     }
-    // console.log(typeof result);
-    // console.log(result);
-    window.data = result;
-    updateDisplay(result);
-    return result;
+    window.data = result.cve;
+    updateDisplay(window.data);
   };
 }
 
