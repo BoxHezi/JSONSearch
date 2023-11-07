@@ -1,7 +1,13 @@
 var template =
-  "<td><a href='$url' target='_blank'>$cveId</a></td><td>$cvss</td><td>$desc</td><td>$published</td>";
+  "<td style='width: 10%'><a href='$url' target='_blank'>$cveId</a></td><td style='width: 10%'>$cvss</td><td style='width: 60%'>$desc</td><td style='width: 20%'>$published</td>";
 var resultLimit = 200; // declare a variable to limit search results
 
+/**
+ * Replaces certain characters in a string with their HTML entities.
+ *
+ * @param {string} content - The string to be parsed.
+ * @returns {string} The parsed string.
+ */
 function parseDesc(content) {
   return content.replace("<", "&lt;").replace(">", "&gt;").replace(/\'/g, '"');
 }
@@ -24,17 +30,22 @@ function getDescByLang(desc, langCode = "en") {
   return result;
 }
 
+/**
+ * This function formats the CVSS score of a CVE item.
+ *
+ * @param {Object} cve - The CVE item object. This object should have a 'score' property that is an array of two elements.
+ * @returns {string} A string representing the CVSS score in the format "X - Y.Y", where X is the first element of the 'score' array and Y.Y is the second element of the 'score' array, rounded to one decimal place.
+ */
 function getCVSS(cve) {
-  if ("v31score" in cve) {
-    return cve.v31score;
-  } else if ("v30score" in cve) {
-    return cve.v30score;
-  } else if ("v2score" in cve) {
-    return cve.v2score;
-  }
-  return "N/A";
+  const score = cve.score;
+  return score[0] + " - " + score[1].toFixed(1);
 }
 
+/**
+ * Updates the display with the provided data.
+ *
+ * @param {Object} data - The data to be displayed. Each entry should have an "id" property and a "descriptions" property.
+ */
 function updateDisplay(data) {
   document.getElementById("result-body").innerHTML = ""; // clear the table
   for (const [k, v] of Object.entries(data)) {
@@ -42,7 +53,7 @@ function updateDisplay(data) {
     let content = template
       .replace("$url", v.url)
       .replace("$cveId", v.id)
-      .replace("$cvss", getCVSS(v).toFixed(1)) // get cvss score for each cve
+      .replace("$cvss", getCVSS(v)) // get cvss score for each cve
       .replace("$desc", parseDesc(getDescByLang(v.descriptions)))
       .replace("$published", v.published.replace("T", " "));
     tr.innerHTML = content;
@@ -69,7 +80,7 @@ function generateRegex(words) {
     }
   }
   if (negativeMatch.length > 0) {
-    regex += "(^((?!("; // (^((?!(n)).)*$)
+    regex += "(^((?!("; // (^((?!(n[0]|n[1])).)*$)
     for (let i = 0; i < negativeMatch.length; i++) {
       regex += negativeMatch[i];
       if (i != negativeMatch.length - 1) {
@@ -111,6 +122,11 @@ function doSearch(value) {
   updateDisplay(filtered);
 }
 
+/**
+ * Parses an input file and updates the display with the parsed data.
+ *
+ * @param {File} file - The input file to be parsed.
+ */
 function parseInputFile(file) {
   const reader = new FileReader();
   reader.readAsText(file);
