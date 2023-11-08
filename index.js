@@ -1,4 +1,6 @@
 var resultLimit = 200; // declare a variable to limit search results
+var allData = []; // all data
+var displayData = []; // curent display data
 
 /**
  * Replaces certain characters in a string with their HTML entities.
@@ -80,7 +82,9 @@ function generateTableRow(data) {
     <td><a href="${data.url}" target="_blank">${data.id}</a></td>
     <td>${getCVSS(data)}</td>
     <td>${parseSeverity(getSeverity(data)).outerHTML}</td>
-    <td>${parseDesc(getDescByLang(data.descriptions))}</td>
+    <td style='text-align: justify'>${parseDesc(
+      getDescByLang(data.descriptions)
+    )}</td>
     <td>${data.published.split("T")[0]}</td>
   `;
 }
@@ -91,12 +95,14 @@ function generateTableRow(data) {
  * @param {Object} data - The data to be displayed. Each entry should have an "id" property and a "descriptions" property.
  */
 function updateDisplay(data) {
+  displayData = [];
   document.getElementById("result-thead").style.display = "";
   document.getElementById("result-tbody").innerHTML = ""; // clear the table
-  for (const [k, v] of Object.entries(data)) {
+  for (const d of data) {
     let tr = document.createElement("tr");
-    tr.innerHTML = generateTableRow(v);
+    tr.innerHTML = generateTableRow(d);
     document.getElementById("result-tbody").appendChild(tr);
+    displayData.push(d);
   }
 }
 
@@ -137,13 +143,13 @@ function generateRegex(words) {
  * @param {Object} data - The data to be filtered. Each entry should have an "id" property and a "descriptions" property. Default to window.data
  * @returns {Array} An array containing the entries in the data that match the regular expression.
  */
-function filterData(regex, data = window.data) {
+function filterData(regex, data = allData) {
   let filtered = [];
-  for (const [k, v] of Object.entries(data)) {
+  for (const d of data) {
     const testStr =
-      v.id.toLowerCase() + getDescByLang(v.descriptions).toLowerCase();
+      d.id.toLowerCase() + getDescByLang(d.descriptions).toLowerCase();
     if (testStr.match(regex)) {
-      filtered.push(data[k]);
+      filtered.push(d);
     }
   }
   return filtered;
@@ -176,13 +182,74 @@ function parseInputFile(file) {
       console.log(err);
       return;
     }
-    if ("cve" in result) {
-      window.data = result.cve;
-    } else {
-      window.data = result;
+    for (const [_, v] of Object.entries(result)) {
+      allData.push(v);
     }
-    updateDisplay(window.data);
+    updateDisplay(allData);
   };
 }
 
-// window.data: store all information read from json file
+/**
+ * Sorting Function
+ */
+
+var sortUpIcon = "bi-sort-up"; // ASC Order
+var sortDownIcon = "bi-sort-down"; // DESC Order
+var sortStatusCount = 0; // 0: no sorting, 1: DESC, 2: ASC
+var lastSortTarget = "";
+
+function removeSortIcon(icon) {
+  try {
+    icon.classList.remove(sortDownIcon);
+    icon.classList.remove(sortUpIcon);
+  } catch {}
+}
+
+function updateSortStatus() {
+  if (sortStatusCount === 0) {
+    sortStatusCount++;
+    return sortDownIcon;
+  } else if (sortStatusCount === 1) {
+    sortStatusCount++;
+    return sortUpIcon;
+  } else {
+    sortStatusCount = 0;
+    return null;
+  }
+}
+
+function updateSortIcon(iconElem, sortClass) {
+  removeSortIcon(iconElem);
+  if (sortClass) {
+    iconElem.classList.add(sortClass);
+  }
+}
+
+function doSort(e) {
+  // TODO: complete the logic for sorting function
+  const sortTarget = e.target.innerText;
+  if (sortTarget !== lastSortTarget) {
+    sortStatusCount = 0;
+  }
+  let ts = document.querySelectorAll("th");
+  for (let t of ts) {
+    let iconElem = t.querySelector("i");
+    if (iconElem) {
+      if (t.innerText === sortTarget) {
+        const sortClass = updateSortStatus();
+        updateSortIcon(iconElem, sortClass);
+        lastSortTarget = sortTarget;
+      } else {
+        removeSortIcon(iconElem);
+      }
+    }
+  }
+}
+
+// add event listener to table headers, in order to enable sorting function
+let theads = document.querySelectorAll("th");
+for (let t of theads) {
+  if (t.innerText !== "Description") {
+    t.addEventListener("click", doSort);
+  }
+}
