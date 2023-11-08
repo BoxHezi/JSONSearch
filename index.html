@@ -18,15 +18,16 @@
       <input type="text" placeholder="SEARCH" oninput="doSearch(this.value)" />
       <div id="result">
         <table class="table table-striped">
-          <thead>
+          <thead style="display: none" id="result-thead">
             <tr>
-              <th scope="col">CVE</th>
-              <th scope="col">CVSS</th>
-              <th scope="col">Description</th>
-              <th scope="col">Published Date</th>
+              <th scope="col" style="width: 10%;">CVE</th>
+              <th scope="col" style="width: 10%;">CVSS</th>
+              <th scope="col" style="width: 10%;">Severity</th>
+              <th scope="col" style="width: 50%;">Description</th>
+              <th scope="col" style="width: 15%;">Published Date</th>
             </tr>
           </thead>
-          <tbody id="result-body"></tbody>
+          <tbody id="result-tbody"></tbody>
         </table>
       </div>
     </div>

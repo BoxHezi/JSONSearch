@@ -1,5 +1,3 @@
-var template =
-  "<td style='width: 10%'><a href='$url' target='_blank'>$cveId</a></td><td style='width: 10%'>$cvss</td><td style='width: 60%'>$desc</td><td style='width: 20%'>$published</td>";
 var resultLimit = 200; // declare a variable to limit search results
 
 /**
@@ -42,23 +40,63 @@ function getCVSS(cve) {
 }
 
 /**
+ * Get the severity of a cve
+ *
+ * @param {Object} cve - The CVE object
+ * @returns {string} - The severity of the given CVE
+ */
+function getSeverity(cve) {
+  return cve.score[2];
+}
+
+/**
+ * Creates a span element with a class based on the severity level.
+ *
+ * @param {string} severity - The severity level of a CVE item.
+ * @returns {Object} A span element with a class corresponding to the severity level and the inner text set to the severity level.
+ */
+function parseSeverity(severity) {
+  let span = document.createElement("span");
+  span.classList.add("alert");
+  if (severity == "CRITICAL" || severity == "HIGH") {
+    span.classList.add("alert-danger");
+  } else if (severity == "MEDIUM") {
+    span.classList.add("alert-warning");
+  } else {
+    span.classList.add("alert-success");
+  }
+  span.innerText = severity;
+  return span;
+}
+
+/**
+ * Generates a table row with the provided data.
+ *
+ * @param {Object} data - The data to be displayed in the table row. The object should have properties: url, id, score, severity, descriptions, and published.
+ * @returns {string} A string representing a table row with the provided data.
+ */
+function generateTableRow(data) {
+  return `
+    <td><a href="${data.url}" target="_blank">${data.id}</a></td>
+    <td>${getCVSS(data)}</td>
+    <td>${parseSeverity(getSeverity(data)).outerHTML}</td>
+    <td>${parseDesc(getDescByLang(data.descriptions))}</td>
+    <td>${data.published.split("T")[0]}</td>
+  `;
+}
+
+/**
  * Updates the display with the provided data.
  *
  * @param {Object} data - The data to be displayed. Each entry should have an "id" property and a "descriptions" property.
  */
 function updateDisplay(data) {
-  document.getElementById("result-body").innerHTML = ""; // clear the table
+  document.getElementById("result-thead").style.display = "";
+  document.getElementById("result-tbody").innerHTML = ""; // clear the table
   for (const [k, v] of Object.entries(data)) {
     let tr = document.createElement("tr");
-    let content = template
-      .replace("$url", v.url)
-      .replace("$cveId", v.id)
-      .replace("$cvss", getCVSS(v)) // get cvss score for each cve
-      .replace("$desc", parseDesc(getDescByLang(v.descriptions)))
-      .replace("$published", v.published.replace("T", " "));
-    tr.innerHTML = content;
-    let tbodyContent = document.getElementById("result-body");
-    tbodyContent.appendChild(tr);
+    tr.innerHTML = generateTableRow(v);
+    document.getElementById("result-tbody").appendChild(tr);
   }
 }
 
