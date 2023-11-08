@@ -1,6 +1,6 @@
 var resultLimit = 200; // declare a variable to limit search results
 var allData = []; // all data
-var displayData = []; // curent display data
+var displayData = []; // current display data
 
 /**
  * Replaces certain characters in a string with their HTML entities.
@@ -193,51 +193,67 @@ function parseInputFile(file) {
  * Sorting Function
  */
 
-var sortUpIcon = "bi-sort-up"; // ASC Order
-var sortDownIcon = "bi-sort-down"; // DESC Order
-var sortStatusCount = 0; // 0: no sorting, 1: DESC, 2: ASC
+var sortIconASC = "bi-sort-up"; // ASC Order
+var sortIconDESC = "bi-sort-down"; // DESC Order
+var sortStatus = 0; // 0: no sorting, 1: DESC, 2: ASC
 var lastSortTarget = "";
+var unsortedData = [];
 
-function removeSortIcon(icon) {
+/**
+ * Removes the sort icon from the specified element.
+ *
+ * @param {HTMLElement} iconElem - The HTML element from which to remove the sort icon.
+ */
+function removeSortIcon(iconElem) {
   try {
-    icon.classList.remove(sortDownIcon);
-    icon.classList.remove(sortUpIcon);
+    iconElem.classList.remove(sortIconDESC);
+    iconElem.classList.remove(sortIconASC);
   } catch {}
 }
 
+/**
+ * Updates the sort status and returns the corresponding sort icon class.
+ *
+ * @returns {string|null} The class of the sort icon corresponding to the updated sort status, or null if the sort status is 0.
+ */
 function updateSortStatus() {
-  if (sortStatusCount === 0) {
-    sortStatusCount++;
-    return sortDownIcon;
-  } else if (sortStatusCount === 1) {
-    sortStatusCount++;
-    return sortUpIcon;
-  } else {
-    sortStatusCount = 0;
-    return null;
-  }
+  sortStatus = (sortStatus + 1) % 3;
+  return sortStatus === 1
+    ? sortIconDESC
+    : sortStatus === 2
+    ? sortIconASC
+    : null;
 }
 
-function updateSortIcon(iconElem, sortClass) {
+/**
+ * Sets the sort icon for the specified element.
+ *
+ * @param {HTMLElement} iconElem - The HTML element for which to set the sort icon.
+ * @param {string} sortClass - The class of the sort icon to set.
+ */
+function setSortIcon(iconElem, sortClass) {
   removeSortIcon(iconElem);
   if (sortClass) {
     iconElem.classList.add(sortClass);
   }
 }
 
-function doSort(e) {
-  // TODO: complete the logic for sorting function
-  const sortTarget = e.target.innerText;
+/**
+ * Updates the sort icon for the specified sort target.
+ *
+ * @param {string} sortTarget - The sort target for which to update the sort icon.
+ */
+function updateSortIcon(sortTarget) {
   if (sortTarget !== lastSortTarget) {
-    sortStatusCount = 0;
+    sortStatus = 0;
   }
-  let ts = document.querySelectorAll("th");
-  for (let t of ts) {
+  let theads = document.querySelectorAll("th");
+  for (let t of theads) {
     let iconElem = t.querySelector("i");
     if (iconElem) {
       if (t.innerText === sortTarget) {
         const sortClass = updateSortStatus();
-        updateSortIcon(iconElem, sortClass);
+        setSortIcon(iconElem, sortClass);
         lastSortTarget = sortTarget;
       } else {
         removeSortIcon(iconElem);
@@ -246,10 +262,58 @@ function doSort(e) {
   }
 }
 
+/**
+ * Sorts the specified dataset based on the specified sort field.
+ *
+ * @param {Array} dataset - The dataset to sort.
+ * @param {string} sortField - The field to sort by.
+ * @returns {Array} The sorted dataset.
+ */
+function sortData(dataset, sortField) {
+  // sortStatus: 1: DESC, 2: ASC
+  return dataset.sort((a, b) => {
+    let aValue, bValue;
+    if (sortField === "CVE") {
+      aValue = a.id.split("-");
+      bValue = b.id.split("-");
+      aValue = parseInt(aValue[1] + aValue[2]);
+      bValue = parseInt(bValue[1] + bValue[2]);
+    } else if (sortField === "CVSS") {
+      aValue = a.score[1];
+      bValue = b.score[1];
+    } else if (sortField === "Published Date") {
+      aValue = Date.parse(a.published);
+      bValue = Date.parse(b.published);
+    }
+
+    return sortStatus === 1 ? bValue - aValue : aValue - bValue;
+  });
+}
+
+/**
+ * Performs a sort operation based on the event target's inner text.
+ *
+ * @param {Event} e - The event object.
+ */
+function doSort(e) {
+  if (sortStatus === 0 || unsortedData.length !== displayData.length) {
+    unsortedData = displayData;
+  }
+  const sortTarget = e.target.innerText;
+  updateSortIcon(sortTarget);
+  const clone = structuredClone(displayData); // create a copy
+  if (sortStatus === 0) {
+    updateDisplay(unsortedData);
+  } else {
+    updateDisplay(sortData(clone, sortTarget));
+  }
+}
+
 // add event listener to table headers, in order to enable sorting function
 let theads = document.querySelectorAll("th");
 for (let t of theads) {
-  if (t.innerText !== "Description") {
+  if (t.querySelector("i")) {
+    // if there is <i /> tag insider the <th>, the column has sorting function
     t.addEventListener("click", doSort);
   }
 }
