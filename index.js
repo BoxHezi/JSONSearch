@@ -100,6 +100,7 @@ function updateDisplay(data) {
   document.getElementById("result-tbody").innerHTML = ""; // clear the table
   for (const d of data) {
     let tr = document.createElement("tr");
+    tr.title = d.sourceIdentifier;
     tr.innerHTML = generateTableRow(d);
     document.getElementById("result-tbody").appendChild(tr);
     displayData.push(d);
@@ -113,35 +114,34 @@ function updateDisplay(data) {
  * @returns {string} A regular expression that matches any string containing all the search terms (excluding the negative matches).
  */
 function generateRegex(words) {
-  let regex = "";
+  let positiveMatch = [];
   let negativeMatch = [];
 
   for (const w of words) {
+    let word = w.replace(/[.*+?^${}()|\[\]\\]/g, "\\$&");
     if (w[0] === "-") {
-      negativeMatch.push(w.substring(1));
+      negativeMatch.push(word.substring(1));
     } else {
-      regex += "(?=.*" + w + ")";
+      positiveMatch.push(word);
     }
   }
+
+  /* (?=.*w0)(?=.*w2) */
+  let regex = positiveMatch.map((s) => "(?=.*" + s + ")").join("");
   if (negativeMatch.length > 0) {
-    regex += "(^((?!("; // (^((?!(n[0]|n[1])).)*$)
-    for (let i = 0; i < negativeMatch.length; i++) {
-      regex += negativeMatch[i];
-      if (i != negativeMatch.length - 1) {
-        regex += "|";
-      }
-    }
-    regex += ")).)*$)";
+    /* (^((?!(w0|w1)).)*$) */
+    regex += "(^((?!(" + negativeMatch.join("|") + ")).)*$)";
   }
+  // console.log(regex);
   return regex;
 }
 
 /**
- * Filters the provided data based on the provided regular expression.
+ * Filters the provided data based on a regular expression.
  *
- * @param {string} regex - A regular expression used to filter the data.
- * @param {Object} data - The data to be filtered. Each entry should have an "id" property and a "descriptions" property. Default to window.data
- * @returns {Array} An array containing the entries in the data that match the regular expression.
+ * @param {RegExp} regex - The regular expression to match against.
+ * @param {Array} [data=allData] - The data to filter. Defaults to the global `allData` array if not provided.
+ * @returns {Array} An array containing only the data items that match the regular expression. Each item in the array is an object that includes an 'id' and 'descriptions'.
  */
 function filterData(regex, data = allData) {
   let filtered = [];
@@ -156,9 +156,9 @@ function filterData(regex, data = allData) {
 }
 
 /**
- * Performs a search operation on window.data based on the provided search terms and updates the display with the search results.
+ * Performs a search operation on the data.
  *
- * @param {string} value - A string containing the search terms. If a term starts with "-", it is considered a negative match.
+ * @param {string} value - The search term(s) to be used. Multiple terms can be separated by spaces. If a term starts with "-", it is considered a negative match.
  */
 function doSearch(value) {
   const regex = generateRegex(value.toLowerCase().split(" "));
