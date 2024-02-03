@@ -79,7 +79,9 @@ function parseSeverity(severity) {
  */
 function generateTableRow(data) {
   return `
-    <td><a href="${data.url}" target="_blank">${data.id}</a></td>
+    <td><a href="${data.url}" target="_blank">${data.id}</a><br><span>${
+    data.sourceIdentifier
+  }</span></td>
     <td>${getCVSS(data)}</td>
     <td>${parseSeverity(getSeverity(data)).outerHTML}</td>
     <td style='text-align: justify'>${parseDesc(
@@ -100,7 +102,6 @@ function updateDisplay(data) {
   document.getElementById("result-tbody").innerHTML = ""; // clear the table
   for (const d of data) {
     let tr = document.createElement("tr");
-    tr.title = d.sourceIdentifier;
     tr.innerHTML = generateTableRow(d);
     document.getElementById("result-tbody").appendChild(tr);
     displayData.push(d);
@@ -146,9 +147,9 @@ function generateRegex(words) {
 function filterData(regex, data = allData) {
   let filtered = [];
   for (const d of data) {
-    const testStr =
+    const str =
       d.id.toLowerCase() + getDescByLang(d.descriptions).toLowerCase();
-    if (testStr.match(regex)) {
+    if (str.match(regex)) {
       filtered.push(d);
     }
   }
@@ -200,18 +201,6 @@ var lastSortTarget = "";
 var unsortedData = [];
 
 /**
- * Removes the sort icon from the specified element.
- *
- * @param {HTMLElement} iconElem - The HTML element from which to remove the sort icon.
- */
-function removeSortIcon(iconElem) {
-  try {
-    iconElem.classList.remove(sortIconDESC);
-    iconElem.classList.remove(sortIconASC);
-  } catch {}
-}
-
-/**
  * Updates the sort status and returns the corresponding sort icon class.
  *
  * @returns {string|null} The class of the sort icon corresponding to the updated sort status, or null if the sort status is 0.
@@ -232,7 +221,7 @@ function updateSortStatus() {
  * @param {string} sortClass - The class of the sort icon to set.
  */
 function setSortIcon(iconElem, sortClass) {
-  removeSortIcon(iconElem);
+  iconElem.classList.remove(sortIconDESC, sortIconASC);
   if (sortClass) {
     iconElem.classList.add(sortClass);
   }
@@ -252,11 +241,10 @@ function updateSortIcon(sortTarget) {
     let iconElem = t.querySelector("i");
     if (iconElem) {
       if (t.innerText === sortTarget) {
-        const sortClass = updateSortStatus();
-        setSortIcon(iconElem, sortClass);
+        setSortIcon(iconElem, updateSortStatus()); // set sort icon according to sortStatus
         lastSortTarget = sortTarget;
       } else {
-        removeSortIcon(iconElem);
+        setSortIcon(iconElem, "");
       }
     }
   }
@@ -301,11 +289,11 @@ function doSort(e) {
   }
   const sortTarget = e.target.innerText;
   updateSortIcon(sortTarget);
-  const clone = structuredClone(displayData); // create a copy
   if (sortStatus === 0) {
     updateDisplay(unsortedData);
   } else {
-    updateDisplay(sortData(clone, sortTarget));
+    // pass in a copy of displayData to apply sorting logic
+    updateDisplay(sortData([...displayData], sortTarget));
   }
 }
 
